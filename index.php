@@ -500,9 +500,9 @@ html[data-svc=bad] .hero-av::after{background:#ff5d73;animation:none}
 :root:not([data-theme=light])[data-accent=xmas] .xb-gr{opacity:.62}
 @media(max-width:640px){.xb-f1{height:84px;-webkit-mask-size:252px 84px;mask-size:252px 84px}.xb-f2{height:105px;-webkit-mask-size:336px 105px;mask-size:336px 105px}.xb-f3{height:119px;-webkit-mask-size:448px 119px;mask-size:448px 119px}.xb-gr{height:30px;-webkit-mask-size:450px 30px;mask-size:450px 30px}}
 @media(min-width:900px){:root[data-accent=xmas] .main{padding-bottom:150px}}
-/* canvas snowfall in front of everything (js draws it; hidden for reduced motion) */
+/* snowfall: one low-res canvas (js), above the blurred header/nav so the moving snow never forces their backdrop blur to recompute */
 #snow{display:none}
-:root[data-accent=xmas] #snow{display:block;position:fixed;inset:0;width:100%;height:100%;z-index:15;pointer-events:none}
+:root[data-accent=xmas] #snow{display:block;position:fixed;inset:0;width:100%;height:100%;z-index:31;pointer-events:none}
 /* header: gold hairline + elegant string lights */
 :root[data-accent=xmas] .top::after{height:1px;background:linear-gradient(90deg,transparent,var(--xgo) 20%,var(--xgo2) 50%,var(--xgo) 80%,transparent)}
 :root[data-theme=light][data-accent=xmas] .top{box-shadow:0 14px 32px -22px rgba(12,84,54,.4)}
@@ -551,7 +551,7 @@ html[data-svc=bad] .hero-av::after{background:#ff5d73;animation:none}
 @media(prefers-reduced-motion:no-preference){
 @keyframes xmA{0%,40%{opacity:1}55%,100%{opacity:.25}}
 @keyframes xmB{0%,40%{opacity:.25}55%,100%{opacity:1}}
-@keyframes xAu{to{background-position:-100% 0,0 0;transform:skewY(-5deg) translateY(2vh)}}
+@keyframes xAu{to{transform:skewY(-5deg) translate3d(-6vw,2vh,0)}}
 @keyframes xBk{50%{opacity:.4}}
 @keyframes xSw{from{transform:rotate(5deg)}to{transform:rotate(-5deg)}}
 :root[data-accent=xmas]:not(.gl-lite) .gar i:nth-child(1){animation:xmA 3.2s ease-in-out infinite alternate}
@@ -766,20 +766,24 @@ let rz,lw=innerWidth;addEventListener('resize',()=>{if(innerWidth==lw)return;lw=
 function xc(){const e=$('#xct');if(!e)return;const n=new Date(),m=n.getMonth(),d=n.getDate(),y=n.getFullYear();let k='xc_d',c=0;
 if(m==11&&d>=25&&d<=26)k='xc_m';else if(m==11&&d>26||m==0&&d<=7)k='xc_n';else{c=Math.round((new Date(y,11,25)-new Date(y,m,d))/864e5);if(c==1)k='xc_1'}
 e.textContent=t(k).replace('{n}',nf(c,0))}
-const SNOW=(()=>{const cv=$('#snow'),cx=cv&&cv.getContext&&cv.getContext('2d');if(!cx)return{sync(){}};
-let F=[],raf=0,w=0,h=0,lt=0,on=false,spr=null,col='';
-const mk=top=>{const z=Math.random()**1.7;return{x:Math.random()*w,y:top?-8-Math.random()*40:Math.random()*h,r:.7+z*3,v:.3+z*1.1,p:Math.random()*6.28,s:.4+Math.random()*.9,a:.4+z*.55}};
-const sprite=c=>{const s=document.createElement('canvas');s.width=s.height=32;const g=s.getContext('2d'),r=g.createRadialGradient(16,16,0,16,16,16);r.addColorStop(0,c);r.addColorStop(.42,c);r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,32,32);return s};
-const size=()=>{const q=Math.min(devicePixelRatio||1,2),lite=document.documentElement.classList.contains('gl-lite');w=innerWidth;h=innerHeight;cv.width=w*q|0;cv.height=h*q|0;cx.setTransform(q,0,0,q,0,0);
-const n=Math.round(Math.min(lite?60:150,w*h/(lite?20000:9000)));while(F.length<n)F.push(mk());F.length=n};
+const SNOW=(()=>{const cv=$('#snow'),cx=cv&&cv.getContext&&cv.getContext('2d',{alpha:true});if(!cx)return{sync(){}};
+// one low-resolution canvas (1 canvas px per CSS px, never x2/x3: the flakes are soft, so nothing is lost) above the blurred header/nav,
+// so it never forces their backdrop blur to recompute; ~45 sprites per frame, paused in background tabs, still for reduced motion
+let F=[],raf=0,w=0,h=0,lt=0,ld=0,on=false,spr=null,col='';
+// phones and low-power devices draw 30 frames a second (movement is time-based, so the speed stays the same)
+const FPS=()=>document.documentElement.classList.contains('gl-lite')||matchMedia('(pointer:coarse)').matches?30:60;let fps=60;
+const mk=top=>{const z=Math.random()**1.7;return{x:Math.random()*w,y:top?-8-Math.random()*40:Math.random()*h,r:.8+z*2.8,v:.3+z*1.1,p:Math.random()*6.28,s:.4+Math.random()*.9,a:.45+z*.5}};
+const sprite=c=>{const s=document.createElement('canvas');s.width=s.height=16;const g=s.getContext('2d'),r=g.createRadialGradient(8,8,0,8,8,8);r.addColorStop(0,c);r.addColorStop(.42,c);r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,16,16);return s};
+const size=()=>{w=innerWidth;h=innerHeight;cv.width=w;cv.height=h;const lite=document.documentElement.classList.contains('gl-lite');
+const n=Math.round(Math.min(lite?40:90,w*h/(lite?24000:12000)));while(F.length<n)F.push(mk());F.length=n};
 const paint=()=>{cx.clearRect(0,0,w,h);for(const f of F){const s=f.r*2.6;cx.globalAlpha=f.a;cx.drawImage(spr,f.x-s/2,f.y-s/2,s,s)}cx.globalAlpha=1};
-const step=t=>{raf=requestAnimationFrame(step);const k=lt?Math.min(t-lt,50)/16.7:1;lt=t;
+const step=t=>{raf=requestAnimationFrame(step);if(t-ld<1000/fps-3)return;ld=t;const k=lt?Math.min(t-lt,50)/16.7:1;lt=t;
 for(const f of F){f.p+=.02*k*f.s;f.y+=f.v*k;f.x+=(Math.sin(f.p)*.55*f.s+.22)*k;if(f.y>h+8)Object.assign(f,mk(1));if(f.x>w+8)f.x=-8;else if(f.x<-8)f.x=w+8}paint()};
-const stop=()=>{cancelAnimationFrame(raf);raf=0;lt=0};
+const stop=()=>{cancelAnimationFrame(raf);raf=0;lt=0;ld=0};
 const sync=()=>{const c=getComputedStyle(document.documentElement).getPropertyValue('--sn').trim()||'#fff';if(c!=col){col=c;spr=sprite(c)}
 if(document.documentElement.dataset.accent!='xmas'){if(on){stop();on=false;F=[];cx.clearRect(0,0,w,h)}return}
-if(!on){on=true;size()}if(rm()){stop();paint()}else if(document.hidden)stop();else if(!raf)raf=requestAnimationFrame(step)};
-addEventListener('resize',()=>{if(on){size();if(!raf)paint()}});
+if(!on){on=true;fps=FPS();size()}if(rm()){stop();paint()}else if(document.hidden)stop();else if(!raf)raf=requestAnimationFrame(step)};
+let rz;addEventListener('resize',()=>{if(!on)return;clearTimeout(rz);rz=setTimeout(()=>{size();if(!raf)paint()},150)});
 document.addEventListener('visibilitychange',()=>on&&sync());
 return{sync}})();
 const AC=['mono','violet','green','yellow','purple','xmas'];
