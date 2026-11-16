@@ -16,6 +16,7 @@
         'support_tz'        => 'Asia/Tehran', // time zone of those hours
         'default_theme'     => 'mono',        // first visit: mono | violet | green | yellow | purple | xmas
         'default_mode'      => 'dark',        // first visit: dark | light
+        'plan_duration_days' => 0,            // fixed plan length for time notices; 0 = use panel dates
         'allowed_paths'     => ['/sub/'],     // only paths starting with one of these are served; [] = every path
         'rate_limit'        => 120,           // max requests per minute from one IP; 0 = no limit
         'behind_cloudflare' => false,         // true only if the site is really behind Cloudflare (reads CF-Connecting-IP)
@@ -225,6 +226,7 @@ JS);
             'brand' => $brand,
             'theme' => $theme,
             'mode'  => $mode,
+            'planDays' => (int) $CONFIG['plan_duration_days'],
             'sup'   => [
                 'id'   => (string) $CONFIG['support_id'],
                 'from' => (int) $CONFIG['support_from'],
@@ -643,6 +645,21 @@ html[data-svc=bad] .hero-av::after{background:#ff5d73;animation:none}
 .hero p{font-size:14px;line-height:1.8}
 @media(max-width:520px){.card.hero{gap:15px;padding:18px;border-radius:24px}.hero-av{width:52px;height:52px;border-radius:18px;font-size:23px}.hero-av::before{border-radius:23px}.hero p{font-size:13px}}
 @media(prefers-reduced-motion:reduce){.hero-av::before,.hero-av::after,.hero-wave{animation:none}}
+/* ===== subscription remaining notice ===== */
+.card.remaining-notice{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;gap:12px;margin-top:12px;padding:14px 16px;border-radius:22px;border-color:var(--gl-bd);background:linear-gradient(145deg,rgba(var(--ar),.12),transparent 65%),var(--card)}
+.remaining-notice[hidden],.remaining-metric[hidden]{display:none}
+.remaining-notice .ico svg{width:22px;height:22px}
+.remaining-notice h2{margin:0 0 6px;font-size:16px;font-weight:800}
+.remaining-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:10px 18px}
+.remaining-metric{display:grid;gap:5px;font-size:13px}
+.remaining-metric>span:first-child{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.remaining-metric b{color:var(--tx);font-variant-numeric:tabular-nums;white-space:nowrap}
+.remaining-meter{display:block;height:5px;overflow:hidden;border-radius:999px;background:rgba(var(--ar),.16)}
+.remaining-meter i{display:block;height:100%;border-radius:inherit;background:linear-gradient(to right,var(--acc),var(--acc2))}
+[dir=rtl] .remaining-meter i{background:linear-gradient(to left,var(--acc),var(--acc2))}
+#remaining-dismiss{height:40px}
+#remaining-dismiss svg{width:18px;height:18px}
+@media(max-width:520px){.card.remaining-notice{gap:8px;padding:12px 10px;border-radius:18px}.remaining-notice .ico{width:36px;height:36px;border-radius:12px}.remaining-metric{font-size:12px}}
 /* ===== expiry / data-limit notice (modal): colors come from the theme variables, text from T[L] ===== */
 .nx{--nt:#ff7b8a;--nr:255,123,138;position:fixed;inset:var(--hh) 0 0;z-index:25;display:flex;padding:16px max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));overflow-y:auto;overscroll-behavior:contain;background:rgba(0,0,0,.68);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .nx[hidden]{display:none}
@@ -863,7 +880,18 @@ html.calm #snow{display:none!important}
 <section class="card hero"><span class="hero-bg" aria-hidden="true"><i></i></span><span class="xdec" aria-hidden="true"><span class="xcap"></span><span class="xo xo1"><svg viewBox="0 0 40 124"><defs><linearGradient id="xk" x1="0" x2="1"><stop offset="0" stop-color="#8a6420"/><stop offset=".5" stop-color="#ffe7ad"/><stop offset="1" stop-color="#8a6420"/></linearGradient></defs><defs><radialGradient id="xo1g" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#ffb3be"/><stop offset=".4" stop-color="#e0304c"/><stop offset="1" stop-color="#6e0a1b"/></radialGradient></defs><path d="M20 0V78" stroke="#d4b062" stroke-width="1"/><circle cx="20" cy="77" r="2.6" fill="none" stroke="#e9c97a" stroke-width="1.3"/><rect x="14.5" y="79" width="11" height="7" rx="2" fill="url(#xk)"/><circle cx="20" cy="102" r="17" fill="url(#xo1g)"/><path d="M3.6 100q16.4 8.5 32.8 0" stroke="#ffe3a1" stroke-width="1.6" fill="none" opacity=".85"/><path d="M3.4 105q16.6 8.5 33.2 0" stroke="#ffe3a1" stroke-width=".8" fill="none" opacity=".55"/><ellipse cx="12.9" cy="94.3" rx="4.8" ry="2.9" fill="#fff" opacity=".6" transform="rotate(-32 12.9 94.3)"/></svg></span><span class="xo xo2"><svg viewBox="0 0 40 84"><defs><radialGradient id="xo2g" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#fff6d2"/><stop offset=".4" stop-color="#e7b440"/><stop offset="1" stop-color="#7a4e0c"/></radialGradient></defs><path d="M20 0V44" stroke="#d4b062" stroke-width="1"/><circle cx="20" cy="43" r="2.6" fill="none" stroke="#e9c97a" stroke-width="1.3"/><rect x="14.5" y="45" width="11" height="7" rx="2" fill="url(#xk)"/><circle cx="20" cy="65" r="14" fill="url(#xo2g)"/><circle cx="13" cy="62" r="1.1" fill="#fff8e0" opacity=".8"/><circle cx="20" cy="59" r="1.1" fill="#fff8e0" opacity=".8"/><circle cx="27" cy="62" r="1.1" fill="#fff8e0" opacity=".8"/><circle cx="16" cy="69" r="1.1" fill="#fff8e0" opacity=".8"/><circle cx="24" cy="69" r="1.1" fill="#fff8e0" opacity=".8"/><ellipse cx="14.1" cy="58.7" rx="3.9" ry="2.4" fill="#fff" opacity=".6" transform="rotate(-32 14.1 58.7)"/></svg></span><span class="xo xo3"><svg viewBox="0 0 40 100"><defs><radialGradient id="xo3g" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset=".4" stop-color="#cfe0ee"/><stop offset="1" stop-color="#5f7f9c"/></radialGradient></defs><path d="M20 0V62" stroke="#d4b062" stroke-width="1"/><circle cx="20" cy="61" r="2.6" fill="none" stroke="#e9c97a" stroke-width="1.3"/><rect x="14.5" y="63" width="11" height="7" rx="2" fill="url(#xk)"/><circle cx="20" cy="82" r="13" fill="url(#xo3g)"/><path d="M20 76v12M14.8 79l10.4 6M14.8 85l10.4-6" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".9"/><ellipse cx="14.5" cy="76.2" rx="3.6" ry="2.2" fill="#fff" opacity=".6" transform="rotate(-32 14.5 76.2)"/></svg></span></span>
 <div class="hero-av" aria-hidden="true"><b id="hini"></b></div>
 <div class="hero-tx"><div class="hero-chips"><span class="hero-chip"><i class="hero-wave" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg></i><span data-t="hk"></span></span><span class="hero-chip xchip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.6l1.1 2.2 2.4.35-1.75 1.7.4 2.4L12 7.1l-2.15 1.15.4-2.4L8.5 4.15l2.4-.35z"/><path d="M12 8.6l4.6 5.4h-2.3l3.9 4.6H5.8l3.9-4.6H7.4z"/><rect x="10.8" y="18.6" width="2.4" height="3.2" rx=".6"/></svg><span id="xct"></span></span></div>
-<h1 id="hello"></h1><p class="mut" data-t="welcome"></p></div></section>
+<h1 id="hello" tabindex="-1"></h1><p class="mut" data-t="welcome"></p></div></section>
+<section class="card remaining-notice" id="remaining-notice" aria-labelledby="remaining-title" hidden>
+<span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span>
+<div role="status">
+<h2 id="remaining-title" data-t="remaining_title"></h2>
+<div class="remaining-metrics">
+<div class="remaining-metric" id="remaining-data" hidden><span><span class="mut" data-t="vol"></span><b></b></span><span class="remaining-meter" aria-hidden="true"><i></i></span></div>
+<div class="remaining-metric" id="remaining-time" hidden><span><span class="mut"></span><b></b></span><span class="remaining-meter" aria-hidden="true"><i></i></span></div>
+</div>
+</div>
+<button class="ib" type="button" id="remaining-dismiss"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+</section>
 <div class="bento">
 <section class="c3">
 <div class="card" id="c1"><span class="ico material-icons">power_settings_new</span><div><small data-t="svc"></small><b id="v1"></b><small id="s1"></small></div></div>
@@ -943,6 +971,16 @@ const ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorag
 const jget=(u,ms,c)=>{c=c||new AbortController();const tm=setTimeout(()=>c.abort(),ms);return fetch(u,{signal:c.signal,cache:'no-store'}).then(r=>{if(!r.ok)throw r.status;return r.json()}).finally(()=>clearTimeout(tm))};
 const T={fa:{nx_t:'تاریخ سرویس شما تمام شده است',nx_d:'مدت زمان سرویس شما به پایان رسیده است. برای خرید سرویس جدید یا تمدید سرویس، در تلگرام به پشتیبانی پیام بدهید.',nx_b:'خرید یا تمدید سرویس',nx_m:'تاریخ پایان:',nl_t:'حجم سرویس شما تمام شده است',nl_d:'حجم مصرفی سرویس شما به پایان رسیده است. برای خرید حجم یا تمدید سرویس، در تلگرام به پشتیبانی پیام بدهید.',nl_b:'خرید حجم و تمدید سرویس',nl_m:'مصرف:',nx_c:'بستن',n3:'پشتیبانی',sp_t:'پشتیبانی',sp_d:'برای هر سؤال یا مشکل در مورد سرویس، مستقیم در تلگرام به پشتیبانی پیام بدهید.',sp_open:'پشتیبانی باز است',sp_closed:'پشتیبانی بسته است',sp_mo:'الان در ساعت پشتیبانی هستیم؛ می‌توانید همین حالا پیام بدهید.',sp_mc:'الان خارج از ساعت پشتیبانی هستیم. لطفاً بعد از ساعت {o} (به وقت ایران) پیام بدهید.',sp_co:'{d} تا پایان ساعت پشتیبانی',sp_cc:'{d} تا شروع ساعت پشتیبانی',sp_go:'ارسال پیام در تلگرام',sp_h:'ساعات پشتیبانی',sp_ot:'۹ صبح',sp_ct:'۱۲ شب',sp_to:' تا ',sp_tz:'به وقت ایران',sp_n:'ساعت فعلی ایران',sp_c:'تهران',sp_hr:'ساعت',sp_mn:'دقیقه',sp_and:' و ',hello:'سلام، ',welcome:'به پنل کاربری سرویس خود خوش آمدید.',hk:'پنل کاربری',fc_t:'پیش‌بینی مصرف',fc_ok:'با همین روند، حجم شما تا پایان سرویس کافی است و حدود {m} هم باقی می‌ماند.',fc_bad:'با همین روند، حجم شما حدود {n} دیگر تمام می‌شود؛ یعنی {d} زودتر از پایان سرویس.',fc_nolim:'با همین روند، حجم شما حدود {n} دیگر تمام می‌شود.',fc_idle:'در ۷ روز اخیر مصرفی نداشته‌اید؛ حجم شما فعلاً کافی است.',fc_avg:'میانگین مصرف روزانه در ۷ روز اخیر: {r}',fc_less:'کمتر از یک روز',er_gone:'این لینک اشتراک معتبر نیست یا سرویس آن حذف شده است. لینک را بررسی کنید یا به پشتیبانی پیام بدهید.',er_down:'سرور فعلاً پاسخ نمی‌دهد. چند دقیقه دیگر دوباره تلاش کنید.',er_busy:'تعداد درخواست‌ها زیاد بود. یک دقیقهٔ دیگر دوباره تلاش کنید.',er_sup:'پیام به پشتیبانی',fc_lu:'مصرف‌شده',fc_lp:'پیش‌بینی تا پایان سرویس',of_m:'اتصال به سرور برقرار نشد؛ آخرین اطلاعات ذخیره‌شده ({t}) نمایش داده می‌شود.',lt_t:'حالت سبک',lt_d:'انیمیشن‌ها، برف و افکت‌های شیشه‌ای خاموش می‌شوند تا صفحه روی گوشی‌های ضعیف روان‌تر باشد.',in_t:'نصب روی گوشی',in_d:'این صفحه را مثل یک اپ به صفحهٔ اصلی گوشی اضافه کنید تا با یک لمس باز شود و آخرین اطلاعات سرویس، حتی بدون اینترنت، در دسترس باشد.',in_b:'نصب اپ',in_ios:'در Safari دکمهٔ «اشتراک‌گذاری» را بزنید و «Add to Home Screen» را انتخاب کنید.',xc_d:'{n} روز تا کریسمس',xc_1:'فردا کریسمس است!',xc_m:'کریسمس مبارک!',xc_n:'سال نو مبارک!',bt1:'{b} اطلاعات سرویس',bt2:'تجربه‌ای متفاوت در اتصال و مدیریت.',svc:'وضعیت سرویس',vol:'حجم باقی‌مانده',time:'زمان باقی‌مانده',unl:'نامحدود',nlv:'بدون محدودیت حجم',nlt:'بدون محدودیت زمانی',of:'از',days:'روز',active:'فعال',disabled:'غیرفعال',limited:'حجم تمام شده',expired:'منقضی شده',on_hold:'در انتظار اتصال',ok:'سرویس شما در حال حاضر فعال است.',no:'سرویس شما فعال نیست.',chart:'نمودار مصرف',total:'کل مصرف',avg:'میانگین',peak:'پیک',hour:'ساعتی',day:'روزانه',month:'ماهانه',os:'انتخاب سیستم‌عامل',conn:'کد اتصال / کانفیگ',qrt:'کد QR اشتراک',big:'نمایش بزرگ',scan:'اسکن برای اتصال',copied:'کپی شد',used:'ترافیک مصرفی',dl:'دانلود',cfg:'افزودن کانفیگ',tut:'آموزش',err:'خطا در دریافت اطلاعات اشتراک.',retry:'تلاش دوباره',n2:'تنظیمات',stt:'تنظیمات صفحه',thm:'تم',md:'حالت نمایش',mdd:'تیره',mdl:'روشن',thd:'رنگ‌بندی صفحه را انتخاب کنید. همه تم‌ها با حالت تیره و روشن سازگارند.',tm:'سیاه و سفید (پیش‌فرض)',tv:'رویای کیهانی',tg:'سبز',ty:'زرد',tp:'بنفش',tx:'کریسمس',n1:'داشبورد',ui:'اطلاعات کاربر',lg:'زبان',r:['۲۴ ساعت','۷ روز','۳۰ روز','۱۲ ماه','همه'],u:['بایت','کیلوبایت','مگ','گیگ','ترابایت']},
 en:{nx_t:'Your service has expired',nx_d:'Your service period has ended. To buy a new service or renew your current one, message our support on Telegram.',nx_b:'Buy or renew service',nx_m:'Ended on',nl_t:'Your data is used up',nl_d:'You have used all the data in your plan. To buy more data or renew your service, message our support on Telegram.',nl_b:'Buy data & renew service',nl_m:'Used',nx_c:'Close',n3:'Support',sp_t:'Support',sp_d:'Have a question or a problem with your service? Message our Telegram support directly.',sp_open:'Support is open',sp_closed:'Support is closed',sp_mo:'We are within support hours — you can message us right now.',sp_mc:'We are outside support hours right now. Please message us after {o} (Iran time).',sp_co:'Closes in {d}',sp_cc:'Opens in {d}',sp_go:'Message on Telegram',sp_h:'Support hours',sp_ot:'9:00 AM',sp_ct:'midnight',sp_to:' – ',sp_tz:'Iran time',sp_n:'Current time in Iran',sp_c:'Tehran',sp_hr:'h',sp_mn:'min',sp_and:' ',hello:'Hello, ',welcome:'Welcome to your service user panel.',hk:'User panel',fc_t:'Usage forecast',fc_ok:'At this rate your data lasts until your service ends, with about {m} left over.',fc_bad:'At this rate your data runs out in about {n}, {d} before your service ends.',fc_nolim:'At this rate your data runs out in about {n}.',fc_idle:'No usage in the last 7 days; your data is fine for now.',fc_avg:'Average daily use over the last 7 days: {r}',fc_less:'less than a day',er_gone:'This subscription link is not valid, or its service was removed. Check the link or message support.',er_down:'The server is not responding right now. Try again in a few minutes.',er_busy:'Too many requests. Try again in a minute.',er_sup:'Message support',fc_lu:'Used',fc_lp:'Projected by service end',of_m:'Could not reach the server; showing your last saved info ({t}).',lt_t:'Lite mode',lt_d:'Turns off animations, snow and glass effects so the page runs smoothly on slower phones.',in_t:'Install on your phone',in_d:'Add this page to your home screen like an app: it opens with one tap and shows your latest service info, even offline.',in_b:'Install app',in_ios:'In Safari, tap Share and choose “Add to Home Screen”.',xc_d:'{n} days until Christmas',xc_1:'Christmas is tomorrow!',xc_m:'Merry Christmas!',xc_n:'Happy New Year!',bt1:'{b} Service information',bt2:'A Different Experience in Connectivity and Management.',svc:'Service status',vol:'Remaining data',time:'Time left',unl:'Unlimited',nlv:'No data limit',nlt:'No time limit',of:'of',days:'days',active:'Active',disabled:'Disabled',limited:'Data used up',expired:'Expired',on_hold:'On hold',ok:'Your service is active.',no:'Your service is not active.',chart:'Usage chart',total:'Total',avg:'Average',peak:'Peak',hour:'hourly',day:'daily',month:'monthly',os:'Choose your OS',conn:'Connection / config',scan:'Scan to connect',qrt:'Subscription QR code',big:'Enlarge',copied:'Copied',used:'Used traffic',dl:'Download',cfg:'Add config',tut:'Tutorial',err:'Could not load subscription info.',retry:'Retry',n1:'Dashboard',n2:'Settings',stt:'Page settings',thm:'Theme',md:'Appearance',mdd:'Dark',mdl:'Light',thd:'Pick a color scheme. Every theme works in dark and light mode.',tm:'Black & White (default)',tv:'Cosmic Dream',tg:'Green',ty:'Yellow',tp:'Purple',tx:'Christmas',ui:'User information',lg:'Language',r:['24 hours','7 days','30 days','12 months','All'],u:['B','KB','MB','GB','TB']}};
+Object.assign(T.fa, {
+    remaining_title: 'یادآوری اشتراک',
+    remaining_time_est: 'زمان باقی‌مانده (تقریبی)',
+    remaining_close: 'بستن یادآوری اشتراک',
+});
+Object.assign(T.en, {
+    remaining_title: 'Subscription reminder',
+    remaining_time_est: 'Time left (estimated)',
+    remaining_close: 'Dismiss subscription reminder',
+});
 // support: Telegram ID + hours (24h clock, Iran time); keep texts sp_ot/sp_ct in sync with from/to
 const SUP=CFG.sup,BR=CFG.brand;
 // support hours text follows the settings: 9 -> "۹ صبح" / "9:00 AM", 24 -> "۱۲ شب" / "midnight"
@@ -978,7 +1016,7 @@ $('#v3').textContent=ex?(dl>0?nf(dl,0)+' '+t('days'):t('expired')):t('unl');$('#
 $('#c1').dataset.s=s;document.documentElement.dataset.svc=ok?'ok':'bad';
 {const rm=lim?Math.max(d.data_limit-(d.used_traffic||0),0)/d.data_limit:1;$('#s2').dataset.tone=lim?(rm>.3?'ok':rm>.1?'warn':'bad'):'mute';$('#s3').dataset.tone=ex?(dl>7?'ok':dl>3?'warn':'bad'):'mute'}
 $('#used').textContent=fmt(d.lifetime_used_traffic||d.used_traffic);$('#sl').textContent=SUB;
-oses();draw();notice();fcView();offView()}
+oses();draw();notice();remainingNotice();fcView();offView()}
 // ----- expiry / data-limit notice: text follows the page language (view() re-runs on every language switch); colors follow the theme CSS variables -----
 let NX=0;
 const nxClose=()=>{$('#nx').hidden=true};
@@ -995,6 +1033,74 @@ document.documentElement.classList.contains('ld')?setTimeout(go,550):go()}
 $('#nxk').onclick=nxClose;
 $('#nx').addEventListener('click',e=>{if(e.target.id=='nx')nxClose()});
 document.addEventListener('keydown',e=>{if($('#nx').hidden)return;if(e.key=='Escape'){nxClose();return}if(e.key=='Tab'){const f=[$('#nxa'),$('#nxk')],i=f.indexOf(document.activeElement);e.preventDefault();f[(i+(e.shiftKey?-1:1)+f.length)%f.length].focus()}});
+// ----- remaining allowance: dismiss each metric for its current plan or data cycle -----
+const remainingDismissed = {};
+let remainingVisible = [];
+
+function subscriptionTimestamp(value) {
+    if (typeof value === 'number' || (typeof value === 'string' && /^\d+$/.test(value))) return exp(+value);
+    if (typeof value !== 'string') return 0;
+    // Marzban's creation timestamp can be UTC without a timezone suffix.
+    return exp(/^\d{4}-\d{2}-\d{2}T[\d:.]+$/.test(value) ? value + 'Z' : value);
+}
+
+function remainingNotice() {
+    const now = Date.now();
+    const end = subscriptionTimestamp(D.expire);
+    const limit = +D.data_limit;
+    const used = +D.used_traffic;
+    const metrics = {data: null, time: null};
+    const active = !OFF && (D.status || 'active') === 'active' &&
+        !(end > 0 && end <= now) && !(limit > 0 && used >= limit);
+
+    if (active) {
+        if (Number.isFinite(limit) && limit > 0 && D.used_traffic != null && Number.isFinite(used) && used >= 0) {
+            const pastUsage = Math.max(0, (+D.lifetime_used_traffic || 0) - used);
+            metrics.data = {
+                ratio: (limit - used) / limit,
+                cycle: JSON.stringify([D.created_at || '', end || 0, limit, pastUsage]),
+            };
+        }
+
+        if (end > now) {
+            const periodStart = subscriptionTimestamp(D.period_started_at) || (CFG.planDays > 0 ? end - CFG.planDays * 864e5 : 0);
+            const start = periodStart || subscriptionTimestamp(D.created_at);
+            if (start > 0 && start <= now) {
+                metrics.time = {
+                    ratio: (end - now) / (end - start),
+                    cycle: JSON.stringify([start, end]),
+                    estimated: !periodStart,
+                };
+            }
+        }
+    }
+
+    remainingVisible = [];
+    const percent = new Intl.NumberFormat(LC(), {style: 'percent', maximumFractionDigits: 1});
+    for (const [kind, metric] of Object.entries(metrics)) {
+        const row = $('#remaining-' + kind);
+        const key = 'remaining-notice:' + P + ':' + kind;
+        row.hidden = !metric || metric.ratio <= 0 || metric.ratio > .9 ||
+            (remainingDismissed[key] || ls(key)) === metric.cycle;
+        if (row.hidden) continue;
+
+        remainingVisible.push([key, metric.cycle]);
+        if (kind === 'time') row.querySelector('.mut').textContent = t(metric.estimated ? 'remaining_time_est' : 'time');
+        row.querySelector('b').textContent = percent.format(metric.ratio);
+        row.querySelector('i').style.width = metric.ratio * 100 + '%';
+    }
+    $('#remaining-dismiss').setAttribute('aria-label', t('remaining_close'));
+    $('#remaining-notice').hidden = !remainingVisible.length;
+}
+
+$('#remaining-dismiss').onclick = () => {
+    for (const [key, cycle] of remainingVisible) {
+        remainingDismissed[key] = cycle;
+        ls(key, cycle);
+    }
+    remainingNotice();
+    $('#hello').focus({preventScroll: true});
+};
 const su=u=>/^\s*(javascript|data|vbscript):/i.test(u)?'#':u;
 const oi=n=>/ios|iphone|ipad|apple|mac/i.test(n)?'apple':/android/i.test(n)?'android':/win/i.test(n)?'windows':/linux/i.test(n)?'linux':'device';
 function oses(){$('#ol').innerHTML=OS.map(o=>`<details><summary><span class="osi" data-os="${oi(o.engName||'')}"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#os-${oi(o.engName||'')}"/></svg></span>${esc(L=='fa'?o.name:o.engName)}</summary><div class="in">${(o.apps||[]).map(a=>`<div class="a1"><b>${esc(a.name)}</b><p class="mut">${esc((L=='fa'?a.faDescription:a.description)||'')}</p><div class="acts">${a.downloadLink&&!a.isAd?`<a class="btn dl" target="_blank" rel="noopener" href="${esc(su(a.downloadLink))}">${t('dl')}</a>`:''}${a.configLink?`<a class="btn cfg" href="${esc(su(a.configLink.replace('{url}',SUB)))}">${t('cfg')}</a>`:''}${a.videoLink?`<a class="btn tut" target="_blank" rel="noopener" href="${esc(su(a.videoLink))}">${t('tut')}</a>`:''}</div></div>`).join('')}</div></details>`).join('')}
