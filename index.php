@@ -991,7 +991,7 @@ let EK='',L=ls('lang')||'fa',R='24H',PD='hour',D=null,OS=[],U=[];
 const t=k=>{const v=T[L][k];return typeof v=='string'?v.replace(/\{b\}/g,BR):v||k},LC=()=>L=='fa'?'fa-IR':'en-US',nf=(n,m=1)=>(+n).toLocaleString(LC(),{maximumFractionDigits:m});
 const fmt=b=>{b=+b||0;let i=0;while(b>=1024&&i<4){b/=1024;i++}return nf(b,i>2?2:i==2?0:1)+' '+T[L].u[i]};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const exp=e=>!e?0:typeof e=='number'?(e<1e12?e*1e3:e):Date.parse(e);
+const exp=subscriptionTimestamp;
 const toast=m=>{const x=$('#toast');x.textContent=m;x.classList.add('s');setTimeout(()=>x.classList.remove('s'),1500)};
 function cp(x){const f=()=>{const a=document.createElement('textarea');a.value=x;document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(e){}a.remove()};navigator.clipboard?navigator.clipboard.writeText(x).catch(f):f();toast(t('copied'))}
 function qrInto(el,x,s){el.innerHTML='';if(window.QRCode){try{new QRCode(el,{text:x,width:s,height:s,correctLevel:QRCode.CorrectLevel.L});return}catch(e){}}el.textContent=x}
@@ -1038,10 +1038,20 @@ const remainingDismissed = {};
 let remainingVisible = [];
 
 function subscriptionTimestamp(value) {
-    if (typeof value === 'number' || (typeof value === 'string' && /^\d+$/.test(value))) return exp(+value);
-    if (typeof value !== 'string') return 0;
-    // Marzban's creation timestamp can be UTC without a timezone suffix.
-    return exp(/^\d{4}-\d{2}-\d{2}T[\d:.]+$/.test(value) ? value + 'Z' : value);
+    if (typeof value === 'string') {
+        value = value.trim();
+        if (!value) return 0;
+        if (/^[+-]?\d+(?:\.\d+)?$/.test(value)) {
+            value = Number(value);
+        } else {
+            // Panel dates without a timezone are UTC; keep explicit offsets intact.
+            const timestamp = Date.parse(/^\d{4}-\d{2}-\d{2}T[\d:.]+$/.test(value) ? value + 'Z' : value);
+            return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : 0;
+        }
+    }
+    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return 0;
+    const timestamp = value < 1e12 ? value * 1e3 : value;
+    return Number.isFinite(new Date(timestamp).getTime()) ? timestamp : 0;
 }
 
 function remainingNotice() {
@@ -1115,9 +1125,9 @@ $('#t1').textContent=fmt(tot);$('#t2').textContent=fmt(n?tot/n:0);$('#t3').textC
 $('#l2').textContent=t('avg')+' '+t(PD);$('#l3').textContent=t('peak')+' '+t(PD)}
 let UQ=0,UC;
 async function usage(){const q=++UQ,n=new Date(),s=new Date(n);let pd='day';UC&&UC.abort();
-if(R=='24H'){s.setTime(n-864e5);pd='hour'}else if(R=='7D'){s.setDate(n.getDate()-6);s.setHours(0,0,0,0)}else if(R=='30D'){s.setDate(n.getDate()-29);s.setHours(0,0,0,0)}else if(R=='12M'){s.setMonth(n.getMonth()-11);s.setDate(1);s.setHours(0,0,0,0);pd='month'}else{s.setTime(0);pd='month'}
+if(R=='24H'){s.setTime(n-864e5);pd='hour'}else if(R=='7D'){s.setDate(n.getDate()-6);s.setHours(0,0,0,0)}else if(R=='30D'){s.setDate(n.getDate()-29);s.setHours(0,0,0,0)}else if(R=='12M'){s.setDate(1);s.setMonth(n.getMonth()-11);s.setHours(0,0,0,0);pd='month'}else{s.setTime(0);pd='month'}
 let u=[],ok=true;
-if(D.lifetime_used_traffic||D.used_traffic){for(let i=0;i<2;i++){try{const c=UC=new AbortController(),j=await jget(P+'/usage?'+new URLSearchParams({period:pd,start:s.toISOString(),end:n.toISOString()}),1e4,c),st=j.stats||{};u=(st[-1]||Object.values(st)[0]||[]).map(x=>({d:new Date(x.period_start),v:x.total_traffic||0}));ok=true;break}catch(e){if(q!=UQ)return;ok=false;if(!i){await new Promise(f=>setTimeout(f,700));if(q!=UQ)return}}}}
+if(D.lifetime_used_traffic||D.used_traffic){for(let i=0;i<2;i++){try{const c=UC=new AbortController(),j=await jget(P+'/usage?'+new URLSearchParams({period:pd,start:s.toISOString(),end:n.toISOString()}),1e4,c),st=j.stats||{};u=(st[-1]||Object.values(st)[0]||[]).map(x=>({d:new Date(subscriptionTimestamp(x.period_start)),v:x.total_traffic||0})).filter(x=>x.d.getTime()>0);ok=true;break}catch(e){if(q!=UQ)return;ok=false;if(!i){await new Promise(f=>setTimeout(f,700));if(q!=UQ)return}}}}
 if(q!=UQ)return;
 U=u;PD=pd;const sc=$('#stats');
 if(ok)sc.dataset.ok=1;else if(sc.dataset.ok)toast(t('err'));else sc.hidden=true;
@@ -1184,7 +1194,7 @@ let FC=null;
 const dys=n=>n<1?t('fc_less'):nf(Math.floor(n),0)+' '+(L=='en'&&Math.floor(n)==1?'day':t('days'));
 async function fcLoad(){if(!(D&&D.data_limit>0)||OFF)return;const n=new Date(),s=new Date(n);s.setDate(n.getDate()-6);s.setHours(0,0,0,0);
 try{const j=await jget(P+'/usage?'+new URLSearchParams({period:'day',start:s.toISOString(),end:n.toISOString()}),1e4),st=j.stats||{},
-a=(st[-1]||Object.values(st)[0]||[]).map(x=>({d:new Date(x.period_start),v:+x.total_traffic||0})).filter(x=>!isNaN(x.d)),f=a.find(x=>x.v>0);
+a=(st[-1]||Object.values(st)[0]||[]).map(x=>({d:new Date(subscriptionTimestamp(x.period_start)),v:+x.total_traffic||0})).filter(x=>x.d.getTime()>0),f=a.find(x=>x.v>0);
 FC={r:f?a.reduce((q,x)=>q+(x.d>=f.d?x.v:0),0)/Math.max((n-f.d)/864e5,1):0};fcView()}catch(e){}}
 function fcView(){const e=$('#fc'),d=D;if(!e)return;let show=false;
 if(FC&&d&&d.data_limit>0){const lim=d.data_limit,used=d.used_traffic||0,rem=Math.max(lim-used,0),ex=exp(d.expire),dl=ex?(ex-Date.now())/864e5:0,r=FC.r;
